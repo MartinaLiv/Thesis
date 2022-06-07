@@ -13,7 +13,7 @@ Europe <- ne_countries(scale="medium", type="map_units", returnclass="sf", conti
 Europe <- Europe %>%
   dplyr::select(geometry,name_long)  %>%    
   filter(name_long!='Russian Federation')
-europe_grid <- europe_grid <- raster(ext=extent(c(xmin=-30, xmax=54, ymin=25, ymax=74)), crs = "+proj=longlat +ellps=WGS84", res = 0.25)
+europe_grid <- raster(ext=extent(c(xmin=-30, xmax=54, ymin=25, ymax=74)), crs = "+proj=longlat +ellps=WGS84", res = 0.25)
 mask <- rasterize(Europe, europe_grid)
 crs(mask)<- "+proj=longlat +ellps=WGS84"
 
