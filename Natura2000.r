@@ -8,48 +8,61 @@ library(dplyr)
 library(raster)
 library(sf)
 library(sp)
+library(phyloregion)
 
-y1<- read.csv("D:/progetto tesi/y1.csv")
-y1 <- y1 %>%
-  select(d.Longitude, d.Latitude, id) %>%
-  unique()
-
+d<- read.csv("D:/progetto tesi/d.csv")
 Nat.sp <- shapefile("C:/Users/marti/Downloads/Natura2000_end2021_Shapefile/Natura2000_end2021_epsg3035.shp")
 crs(Nat.sp)<- "+proj=longlat +ellps=WGS84"
 
-y1sp <- SpatialPointsDataFrame(coords = y1[, 1:2], proj4string = CRS("+proj=longlat +ellps=WGS84"), data = y1)
+#grids 0.25
+world <- ne_countries(scale = "medium", returnclass = "sf")
+r<-raster::extent(c(xmin=-30, xmax=54, ymin=25, ymax=74))
+r.sp <- as(r, "SpatialPolygons")
+m <- sp::SpatialPolygonsDataFrame(r.sp, data.frame(sp = "x"))
+m1 <- fishnet(mask = m, res = 0.25)
+crs(m1) <- crs(world)
+m1$id=1:nrow(m1)
+m1=m1[,-1] #tolgo oggetto grids da m1
 
-ov2 <- over(y1sp, Nat.sp)
-ov2$id <- y1[,3]
-ov2$In_Out<- ifelse(is.na(ov2$SITECODE), 0, 1) #new variable with values 1 or 0 --> if the plot is inside a Nat2000 area is 1
+coordinates(d)= ~d.Longitude+d.Latitude #trasforma oggetto in spatial dataframe df 
+crs(d)=crs(m1)
+ov3 <- over(d[,2], m1)
 
-mydf <- merge(ov2, y1, by= "id", all= F)
+y025 <- cbind(as.data.frame(d[, c(1,2,3,4,5,6)]), ov3)
+y025<- y025[complete.cases(y025),]
 
-#raster layer representing plots inside Nat2000 areas
-nplotNat <- raster(ext = extent(c(-30, 54, 25, 74)), crs = crs(Nat.sp), res = 0.25)
-cells <- cellFromXY(nplotNat, mydf[, 9:10])
-nplotNat[cells]<- mydf[, 8]
+y025 <- y025 %>%
+  select(d.Longitude, d.Latitude, id)%>%
+  unique()
+ysp <- SpatialPointsDataFrame(coords = y025[, 1:2], proj4string = CRS("+proj=longlat +ellps=WGS84"), data = y025)
 
-#I want to know how many plots are inside a Nat2000 areas per grid
-mydf2<- mydf %>%
+ovNat <- over(ysp, Nat.sp)
+ovNat$id <- y025[, 3]
+ovNat$In_Out <- ifelse(is.na(ovNat$SITECODE), 0, 1)
+
+df <- merge(ovNat, y025, by= "id", all= F)
+
+#raster to see how plots in Natura2000 areas are distributed
+Nat.r <-  raster(ext = extent(c(-30, 54, 25, 74)), crs = crs(Nat.sp), res = 0.25)
+cells <- cellFromXY(Nat.r, df[, 9:10])
+Nat.r[cells]<- df[, 8]
+
+#count how many plots are inside areas
+df2 <- df %>%
   group_by(id) %>%
-  summarise(In_Out, count=n()) %>%
-  unique() #count how many 0 or 1 are there for each grid
+  summarise(In_Out, count= n()) %>%
+  unique()
 
-mydf2 <- mydf2 %>%
+df2 <- df2 %>%
   filter(In_Out %in% 1) %>%
-  ungroup() # only 1
+  ungroup()
 
-mydf3 <- left_join(mydf, mydf2, by= "id") #add the new "variable" to my dataframe
+df3 <- left_join(df, df2, by= "id")
 
-#raster
-nplotNat2 <-  raster(ext = extent(c(-30, 54, 25, 74)), crs = crs(Nat.sp), res = 0.25)
-cells2 <- cellFromXY(nplotNat2, mydf3[, 9:10])
-nplotNat2[cells2]<- mydf3[, 12]
+#rasterize
+nNat <- raster(ext = extent(c(-30, 54, 25, 74)), crs = crs(Nat.sp), res = 0.25)
+cells3 <- cellFromXY(nNat, df3[, 9:10])
+nNat[cells3]<- df3[, 12]
 
-#standardize raster's values
-nplotNat2st <- nplotNat2$layer/maxValue(nplotNat2)
-
-#write
-writeRaster(nplotNat2st, filename = "D:/progetto tesi/nPlotNatura2000.tif", format= "GTiff")
-
+#standardize
+nNatst <- nNat$layer/maxValue(nNat)
