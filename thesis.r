@@ -34,7 +34,7 @@ n_coord <- Nodes.coordinates(n[[2]]) #creates nodes form a SpatialLineDataFrame
 n.sp <- SpatialPoints(n_coord, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs")) #transformed nodes in Spatial Points
 
 #base layer to compute spatial kd
-europe_grid <- raster(ext=extent(c(xmin=-30, xmax=54, ymin=25, ymax=74)),crs ="+proj=longlat +datum=WGS84 +no_defs" , res = 1) 
+europe_grid <- raster(ext=extent(c(xmin=-30, xmax=54, ymin=25, ymax=74)),crs ="+proj=longlat +datum=WGS84 +no_defs" , res = 0.25) 
 europe_grid[]<- rep(1,ncell(europe_grid))
 
 kd.s <- sp.kde(n.sp, standardize = T, newdata = europe_grid) #raster with standardized kernel density estimation of european roads
