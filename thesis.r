@@ -81,27 +81,27 @@ mask <- rasterize(Europe, europe_grid)
 crs(mask)<- "+proj=longlat +ellps=WGS84"
 
 #read our presence data and select unique coordinates
-d <- read.csv("D:/progetto tesi/d.csv")
-p <- d %>%
+d2 <- read.csv("D:/progetto tesi/d2.csv")
+p2 <- d2 %>%
   select(d.Longitude, d.Latitude) %>%
   unique()
   
 #5000 background points
-set.seed(1234)
-b<- randomPoints(mask= mask, 5000 , p= p, lonlatCorrection = T) 
+set.seed(999)
+b<- randomPoints(mask= mask, 5000 , p= p2, lonlatCorrection = T) 
 b <- SpatialPoints(b, proj4string = CRS("+proj=longlat +ellps=WGS84")) #as Spatial
 
 #population density data
 popd<- raster("D:/progetto tesi/pd_025.tif")
 popd <- popd$pd_025/maxValue(popd) #standardized
 
-pdp <- extract(popd, p, df= T) #values for presences
+pdp <- extract(popd, p2, df= T) #values for presences
 pdb <- extract(popd, b, df= T) #values for bg points
 
 #kd roads
 kd <- raster("D:/progetto tesi/kd25.tif")
 
-kdp <- extract(kd, p, df= T) #values for presences
+kdp <- extract(kd, p2, df= T) #values for presences
 kdb <- extract(kd, b, df= T) #values for bg points
 
 #create two dfs, one for presences one for bg points
@@ -112,10 +112,11 @@ df2 <-  merge(pdb, kdb, by= "ID") #background
 df1<- df1[complete.cases(df1), ]
 
 #sample 5000 points from presences
-set.seed(1234)
-random <- runif(nrow(df1))
-df1r<- df1[order(random),]
-sub.df1 <- df1r[1:5000,]
+set.seed
+
+v <- sample(1:16749,5000, replace = FALSE) #da 1 a n righe che hai in df1
+sub.df1 <- df1[v,]
+
 
 #set the column names
 colnames(df2) <- c("ID", "Pop_density", "Kd_roads")
