@@ -60,11 +60,22 @@ noUK <- st_difference(rsf, pUK) #shapefile senza UK
 noUK<- as(noUK, "Spatial") # back to sp
 
 #kd without UK
+Europe <- ne_countries(scale="medium", type="map_units", returnclass="sf", continent="Europe") #sf of Europe
+
+m <- Europe %>%
+  dplyr::select(geometry,name_long)  %>%    
+  filter(name_long!= 'Russian Federation') %>%
+  filter(name_long!= "England") %>%
+  filter(name_long!="Wales")%>%
+  filter(name_long!= "Scotland")  #create a new mask without United Kingdom
+
+m <- raster::rasterize(m , europe_grid)
+
 n1 <- readshpnw(noUK) #create list with nodes
 n_coord1 <- Nodes.coordinates(n1[[2]]) #get nodes as matrix
 nsp1 <- SpatialPoints(n_coord1, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs")) # nodes in spatial points
 
-noUK.kd <- sp.kde(nsp1, standardize = T, newdata = europe_grid) #compute kde roads without UK
+noUK.kd <- sp.kde(nsp1, standardize = T, newdata = m) #compute kde roads without UK
 writeRaster(noUK.kd, filename = "D:/progetto tesi/KernelDensity2.tif", format= "GTiff") #saved
 
 #BAM
