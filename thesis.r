@@ -23,7 +23,7 @@ pop025 <- raster::disaggregate(r2, fact= 4, fun= mean, expand= T)
 pop025 <- raster::mask(pop025, Europe) #mask raster
 
 #kernel density estimation of roads
-library(SpatialEco)  #compute spatial kernel density 
+library(spatialEco)  #compute spatial kernel density 
 library(shp2graph) #create nodes of roads
 
 # worked on the shapefile of European roads on qGis in order to remove not usefull areas for the analysis
